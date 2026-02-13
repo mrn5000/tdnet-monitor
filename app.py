@@ -238,13 +238,14 @@ def render_aggrid(df: pd.DataFrame, quick_filter: str):
 
     opts = gb.build()
     opts["autoSizeStrategy"] = {"type": "fitGridWidth"}
-    opts["domLayout"] = "autoHeight"  # 全画面スクロール用
+    # opts["domLayout"] = "autoHeight"  # 全画面スクロール用
     if quick_filter:
         opts["quickFilterText"] = quick_filter
 
     AgGrid(
         df,
         gridOptions=opts,
+        height=600,
         theme="streamlit",
         update_mode=GridUpdateMode.NO_UPDATE,
         allow_unsafe_jscode=True,
