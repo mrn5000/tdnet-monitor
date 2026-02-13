@@ -607,37 +607,70 @@ if fetch_clicked:
     if df_tdnet.empty:
         st.warning(f"⚠️ {selected_date.strftime('%Y/%m/%d')} の開示は見つかりませんでした。")
         st.info("💡 別の日付を選択してみてください。休日・祝日は開示がありません。")
-        st.stop()
+    else:
+        # 市場データ取得
+        codes = df_tdnet["証券コード"].tolist()
+        df_market = fetch_market_data(codes, api_key)
 
-    n_codes = len(df_tdnet)
+        # データ結合
+        df = df_tdnet.merge(df_market, on="証券コード", how="left").fillna("-")
+        col_order = [
+            "証券コード", "銘柄名", "株価", "PER", "PBR", "配当利回り(%)",
+            "売上(Q)", "営業利益(Q)", "経常利益(Q)", "純利益(Q)",
+            "決算短信", "説明資料", "業績修正", "補足資料",
+        ]
+        df = df[[c for c in col_order if c in df.columns]]
+
+        # session_state に保存
+        st.session_state.df_result = df
+        st.session_state.res_date = selected_date
+        st.session_state.res_n = len(df)
+        
+        # 完了通知
+        st.toast("データ取得が完了しました！", icon="✅")
+        
+        # ブラウザ通知 (JS)
+        notification_js = """
+        <script>
+        function notify() {
+            var title = "データ取得完了！";
+            var options = { body: "最新データの準備ができました。" };
+            if (!("Notification" in window)) {
+                console.log("No support");
+            } else if (Notification.permission === "granted") {
+                new Notification(title, options);
+            } else if (Notification.permission !== "denied") {
+                Notification.requestPermission().then(function (permission) {
+                    if (permission === "granted") { new Notification(title, options); }
+                });
+            }
+        }
+        notify();
+        </script>
+        """
+        components.html(notification_js, height=0, width=0)
+
+# 結果表示 (session_state から)
+if "df_result" in st.session_state and st.session_state.df_result is not None:
+    df = st.session_state.df_result
+    res_date = st.session_state.res_date
+    res_n = st.session_state.res_n
+
     st.markdown(
         f"""
         <div class="metric-row">
             <div class="metric-card">
                 <div class="label">対象日</div>
-                <div class="value">{selected_date.strftime('%Y/%m/%d')}</div>
+                <div class="value">{res_date.strftime('%Y/%m/%d')}</div>
             </div>
             <div class="metric-card">
                 <div class="label">開示銘柄数</div>
-                <div class="value">{n_codes}</div>
+                <div class="value">{res_n}</div>
             </div>
         </div>
         """,
         unsafe_allow_html=True,
     )
-
-    # 市場データ取得
-    codes = df_tdnet["証券コード"].tolist()
-    df_market = fetch_market_data(codes, api_key)
-
-    # データ結合
-    df = df_tdnet.merge(df_market, on="証券コード", how="left").fillna("-")
-    col_order = [
-        "証券コード", "銘柄名", "株価", "PER", "PBR", "配当利回り(%)",
-        "売上(Q)", "営業利益(Q)", "経常利益(Q)", "純利益(Q)",
-        "決算短信", "説明資料", "業績修正", "補足資料",
-    ]
-    df = df[[c for c in col_order if c in df.columns]]
 
     st.markdown("### 📋 決算開示銘柄一覧")
     st.markdown(
@@ -646,33 +679,6 @@ if fetch_clicked:
     )
 
     render_aggrid(df, qf)
-
-    # データ取得完了通知 (トースト通知 + ブラウザ通知)
-    st.toast("データ取得が完了しました！", icon="✅")
-    
-    notification_js = """
-    <script>
-    function notify() {
-        var title = "データ取得完了！";
-        var options = {
-            body: "最新データの準備ができました。",
-        };
-        if (!("Notification" in window)) {
-            console.log("This browser does not support desktop notification");
-        } else if (Notification.permission === "granted") {
-            new Notification(title, options);
-        } else if (Notification.permission !== "denied") {
-            Notification.requestPermission().then(function (permission) {
-                if (permission === "granted") {
-                    new Notification(title, options);
-                }
-            });
-        }
-    }
-    notify();
-    </script>
-    """
-    components.html(notification_js, height=0, width=0)
 
     st.markdown("---")
     st.download_button(
