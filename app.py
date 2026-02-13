@@ -53,6 +53,10 @@ st.markdown(
             width: 100% !important;
             min-width: 100% !important;
         }
+        /* ヘッダー・フッター隠し（没入感向上） */
+        header {visibility: hidden;}
+        footer {visibility: hidden;}
+        .stDeployButton {display: none;}
     </style>
     """,
     unsafe_allow_html=True,
@@ -474,13 +478,14 @@ def render_aggrid(df: pd.DataFrame, quick_filter: str):
 
     opts = gb.build()
     opts["autoSizeStrategy"] = {"type": "fitGridWidth"}
+    opts["domLayout"] = "autoHeight"  # 全画面スクロール用
     if quick_filter:
         opts["quickFilterText"] = quick_filter
 
     AgGrid(
         df,
         gridOptions=opts,
-        height=680,
+        # height=680,  # autoHeightときはheight指定不要
         theme="streamlit",
         update_mode=GridUpdateMode.NO_UPDATE,
         allow_unsafe_jscode=True,
@@ -567,6 +572,9 @@ with st.sidebar:
         """,
         unsafe_allow_html=True,
     )
+    st.markdown("---")
+    # 検索欄をサイドバーに配置
+    qf = st.text_input("銘柄検索", placeholder="銘柄名・コード...", label_visibility="collapsed")
 
 
 # ==========================================================================
@@ -620,9 +628,6 @@ if fetch_clicked:
         '<p class="delay-note">⚠️ 四半期業績は J-Quants Free プラン（12週間遅延・百万円単位） / 株価・PER等は yfinance（リアルタイム）</p>',
         unsafe_allow_html=True,
     )
-
-    with st.expander("🔍 フィルタ設定", expanded=False):
-        qf = st.text_input("検索", placeholder="銘柄名・コードで絞り込み...", label_visibility="collapsed")
 
     render_aggrid(df, qf)
 
