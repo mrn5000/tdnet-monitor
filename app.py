@@ -10,7 +10,8 @@ import calendar
 import logging
 import os
 import time
-from datetime import date, timedelta
+import streamlit.components.v1 as components
+from datetime import date, datetime, timedelta
 
 import pandas as pd
 import requests
@@ -53,10 +54,25 @@ st.markdown(
             width: 100% !important;
             min-width: 100% !important;
         }
-        /* ヘッダー・フッター隠し（没入感向上） */
-        header {visibility: hidden;}
-        footer {visibility: hidden;}
+        /* デプロイボタンのみ隠す */
         .stDeployButton {display: none;}
+        
+        /* サイドバー開閉ボタン（ハンバーガー/矢印）のデザイン変更 */
+        [data-testid="stSidebarCollapsedControl"] {
+            background-color: #238636 !important; /* GitHubの緑色 */
+            color: white !important;
+            border-radius: 8px !important;
+            padding: 4px !important;
+            margin: 10px !important;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3) !important;
+        }
+        /* アイコンの色 */
+        [data-testid="stSidebarCollapsedControl"] > section {
+            color: white !important;
+        }
+        [data-testid="stSidebarCollapsedControl"]:hover {
+            background-color: #2ea043 !important;
+        }
     </style>
     """,
     unsafe_allow_html=True,
@@ -630,6 +646,33 @@ if fetch_clicked:
     )
 
     render_aggrid(df, qf)
+
+    # データ取得完了通知 (トースト通知 + ブラウザ通知)
+    st.toast("データ取得が完了しました！", icon="✅")
+    
+    notification_js = """
+    <script>
+    function notify() {
+        var title = "データ取得完了！";
+        var options = {
+            body: "最新データの準備ができました。",
+        };
+        if (!("Notification" in window)) {
+            console.log("This browser does not support desktop notification");
+        } else if (Notification.permission === "granted") {
+            new Notification(title, options);
+        } else if (Notification.permission !== "denied") {
+            Notification.requestPermission().then(function (permission) {
+                if (permission === "granted") {
+                    new Notification(title, options);
+                }
+            });
+        }
+    }
+    notify();
+    </script>
+    """
+    components.html(notification_js, height=0, width=0)
 
     st.markdown("---")
     st.download_button(
