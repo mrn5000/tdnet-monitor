@@ -38,6 +38,26 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+st.markdown(
+    """
+    <style>
+        /* スマホ用: 全体の余白を詰める */
+        .block-container {
+            padding-top: 1rem !important;
+            padding-bottom: 2rem !important;
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+        }
+        /* iframeの幅調整 */
+        iframe {
+            width: 100% !important;
+            min-width: 100% !important;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 # ---------------------------------------------------------------------------
 # カスタム CSS
 # ---------------------------------------------------------------------------
@@ -600,7 +620,10 @@ if fetch_clicked:
         '<p class="delay-note">⚠️ 四半期業績は J-Quants Free プラン（12週間遅延・百万円単位） / 株価・PER等は yfinance（リアルタイム）</p>',
         unsafe_allow_html=True,
     )
-    qf = st.text_input("検索", placeholder="銘柄名・証券コードでフィルタ...", label_visibility="collapsed")
+
+    with st.expander("🔍 フィルタ設定", expanded=False):
+        qf = st.text_input("検索", placeholder="銘柄名・コードで絞り込み...", label_visibility="collapsed")
+
     render_aggrid(df, qf)
 
     st.markdown("---")
