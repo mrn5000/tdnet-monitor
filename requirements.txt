@@ -1,0 +1,9 @@
+streamlit
+yfinance
+streamlit-aggrid
+jquants-api-client
+pandas
+requests
+python-dotenv
+PyMuPDF
+google-generativeai
