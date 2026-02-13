@@ -552,29 +552,61 @@ with st.sidebar:
 
     st.markdown("---")
 
-    # 日付選択
+    # URLパラメータから状態を復元
+    qp = st.query_params
+    default_date = date.today()
+    auto_run = False
+    
+    if "date" in qp:
+        try:
+            default_date = datetime.strptime(qp["date"], "%Y-%m-%d").date()
+        except:
+            pass
+    if "run" in qp and qp["run"] == "true":
+        auto_run = True
+
+    # 日付変更時に自動実行フラグをクリアするコールバック
+    def on_date_change():
+        st.query_params["run"] = "false"
+
+    # 日付選択 (URLパラメータの日付を初期値にする)
     today = date.today()
+    
+    # 年のインデックス計算
+    y_opts = list(range(today.year, today.year - 3, -1))
+    try:
+        y_idx = y_opts.index(default_date.year)
+    except ValueError:
+        y_idx = 0
+        
     sel_year = st.selectbox(
-        "📅 年", list(range(today.year, today.year - 3, -1)),
-        index=0, format_func=lambda y: f"{y}年",
+        "📅 年", y_opts,
+        index=y_idx, format_func=lambda y: f"{y}年",
+        on_change=on_date_change
     )
+    
     col_m, col_d = st.columns(2)
     with col_m:
         sel_month = st.selectbox(
-            "月", list(range(1, 13)), index=today.month - 1,
+            "月", list(range(1, 13)), index=default_date.month - 1,
             format_func=lambda m: f"{m}月",
+            on_change=on_date_change
         )
     with col_d:
         max_day = calendar.monthrange(sel_year, sel_month)[1]
-        default_day = min(today.day, max_day) - 1
+        # 日のインデックス計算 (範囲外対策)
+        d_idx = min(default_date.day, max_day) - 1
         sel_day = st.selectbox(
-            "日", list(range(1, max_day + 1)), index=default_day,
+            "日", list(range(1, max_day + 1)), index=d_idx,
             format_func=lambda d: f"{d}日",
+            on_change=on_date_change
         )
     selected_date = date(sel_year, sel_month, sel_day)
 
     st.markdown("")
-    fetch_clicked = st.button("🚀 データ取得", use_container_width=True)
+    # ボタンが押されたか、URLパラメータで自動実行指示がある場合
+    btn_clicked = st.button("🚀 データ取得", use_container_width=True)
+    fetch_clicked = btn_clicked or auto_run
 
     st.markdown("---")
     st.markdown(
@@ -597,6 +629,10 @@ with st.sidebar:
 # メインロジック
 # ==========================================================================
 if fetch_clicked:
+    # 状態をURLパラメータに保存 (次回リロード用)
+    st.query_params["date"] = selected_date.strftime("%Y-%m-%d")
+    st.query_params["run"] = "true"
+
     if not api_key:
         st.error("⚠️ J-Quants APIキーが設定されていません。サイドバーで入力するか `.env` ファイルに `JQUANTS_API_KEY` を設定してください。")
         st.stop()
