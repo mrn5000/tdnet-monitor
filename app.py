@@ -157,6 +157,8 @@ def fetch_tdnet_list(target_date: date) -> pd.DataFrame:
             code_map[code] = {
                 "証券コード": code,
                 "銘柄名": item.get("company_name", ""),
+                "時刻": item.get("pubdate", "")[11:16],  # "YYYY-MM-DD HH:MM:SS" -> "HH:MM"
+                "full_date": item.get("pubdate", ""),    # ソート用
                 "決算短信": "-",
                 "説明資料": "-",
                 "業績修正": "-",
@@ -191,8 +193,11 @@ def fetch_tdnet_list(target_date: date) -> pd.DataFrame:
     if not code_map:
         return pd.DataFrame()
 
-    # 全件表示（フィルタリングなし）
-    return pd.DataFrame(list(code_map.values()))
+    # 全件表示（フィルタリングなし）＆ 時刻順（昇順）にソート
+    df = pd.DataFrame(list(code_map.values()))
+    if "full_date" in df.columns:
+        df = df.sort_values("full_date", ascending=True) # 古い順（朝→夜）
+    return df
 
 
 # ==========================================================================
@@ -205,6 +210,7 @@ def render_aggrid(df: pd.DataFrame, quick_filter: str):
     )
 
     # 固定列
+    gb.configure_column("時刻", pinned="left", width=55, suppressSizeToFit=True)
     gb.configure_column("証券コード", pinned="left", width=95, suppressSizeToFit=True)
     gb.configure_column("銘柄名", pinned="left", width=220, suppressSizeToFit=True)
 
@@ -343,7 +349,7 @@ if fetch_clicked:
         # データ保存
         df = df_tdnet
         col_order = [
-            "証券コード", "銘柄名",
+            "時刻", "証券コード", "銘柄名",
             "決算短信", "説明資料", "業績修正", "補足資料", "その他",
         ]
         # 存在するカラムだけにフィルタリング
