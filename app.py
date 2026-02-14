@@ -125,7 +125,7 @@ def fetch_tdnet_list(target_date: date) -> pd.DataFrame:
     """Yanoshin API から指定日の適時開示一覧を取得。"""
     date_str = target_date.strftime("%Y%m%d")
     url = f"https://webapi.yanoshin.jp/webapi/tdnet/list/{date_str}.json2"
-    params = {"limit": 500}
+    params = {"limit": 5000}
 
     try:
         resp = requests.get(url, params=params, timeout=10)
