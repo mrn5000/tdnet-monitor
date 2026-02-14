@@ -126,9 +126,12 @@ def fetch_tdnet_list(target_date: date) -> pd.DataFrame:
     date_str = target_date.strftime("%Y%m%d")
     url = f"https://webapi.yanoshin.jp/webapi/tdnet/list/{date_str}.json2"
     params = {"limit": 5000}
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
 
     try:
-        resp = requests.get(url, params=params, timeout=30)
+        resp = requests.get(url, params=params, headers=headers, timeout=30)
         resp.raise_for_status()
         data = resp.json()
     except Exception as e:
@@ -333,7 +336,9 @@ if fetch_clicked:
 
     if df_tdnet.empty:
         st.warning(f"⚠️ {selected_date.strftime('%Y/%m/%d')} の開示は見つかりませんでした。")
-        st.info("💡 別の日付を選択してみてください。休日・祝日は開示がありません。")
+        st.info("💡 休日・祝日は開示がありません。")
+        if debug_mode:
+            st.error("DEBUG: DataFrame Empty. API Response may be empty or filtered out.")
     else:
         # データ保存
         df = df_tdnet
