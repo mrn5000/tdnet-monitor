@@ -319,6 +319,9 @@ with st.sidebar:
     
     # 検索欄をサイドバーに配置
     qf = st.text_input("銘柄検索", placeholder="銘柄名・コード...", label_visibility="collapsed")
+    
+    st.markdown("---")
+    debug_mode = st.checkbox("🐞 デバッグモード", value=False)
 
 
 # ==========================================================================
@@ -346,6 +349,10 @@ if fetch_clicked:
         st.session_state.res_date = selected_date
         st.session_state.res_n = len(df)
         
+        if debug_mode:
+            st.info(f"🐞 DEBUG INFO:\n- 取得件数: {len(df_tdnet)}\n- 表示件数: {len(df)}")
+            st.write(df.head())
+
         # 完了通知
         st.toast("データ取得が完了しました！", icon="✅")
         
