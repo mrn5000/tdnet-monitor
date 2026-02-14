@@ -128,7 +128,7 @@ def fetch_tdnet_list(target_date: date) -> pd.DataFrame:
     params = {"limit": 5000}
 
     try:
-        resp = requests.get(url, params=params, timeout=10)
+        resp = requests.get(url, params=params, timeout=30)
         resp.raise_for_status()
         data = resp.json()
     except Exception as e:
@@ -158,6 +158,7 @@ def fetch_tdnet_list(target_date: date) -> pd.DataFrame:
                 "説明資料": "-",
                 "業績修正": "-",
                 "補足資料": "-",
+                "その他": "-",
             }
 
         # タイトルから資料カテゴリを判定
@@ -180,18 +181,14 @@ def fetch_tdnet_list(target_date: date) -> pd.DataFrame:
             code_map[code]["説明資料"] = doc_url
         elif any(kw in title for kw in TANSHIN_KW):
             code_map[code]["決算短信"] = doc_url
+        else:
+            # その他の開示（API抽出以外のもの）
+            code_map[code]["その他"] = doc_url
 
     if not code_map:
         return pd.DataFrame()
 
-    # 決算関連の資料が1つもない企業を除外
-    code_map = {
-        k: v for k, v in code_map.items()
-        if v["決算短信"] != "-" or v["説明資料"] != "-" or v["業績修正"] != "-" or v["補足資料"] != "-"
-    }
-
-    if not code_map:
-        return pd.DataFrame()
+    # 全件表示（フィルタリングなし）
     return pd.DataFrame(list(code_map.values()))
 
 
@@ -233,7 +230,7 @@ def render_aggrid(df: pd.DataFrame, quick_filter: str):
             getGui() { return this.eGui; }
         }
     """)
-    for col in ["決算短信", "説明資料", "業績修正", "補足資料"]:
+    for col in ["決算短信", "説明資料", "業績修正", "補足資料", "その他"]:
         gb.configure_column(col, cellRenderer=link_renderer, suppressSizeToFit=True, width=110)
 
     opts = gb.build()
@@ -339,7 +336,7 @@ if fetch_clicked:
         df = df_tdnet
         col_order = [
             "証券コード", "銘柄名",
-            "決算短信", "説明資料", "業績修正", "補足資料",
+            "決算短信", "説明資料", "業績修正", "補足資料", "その他",
         ]
         # 存在するカラムだけにフィルタリング
         df = df[[c for c in col_order if c in df.columns]]
